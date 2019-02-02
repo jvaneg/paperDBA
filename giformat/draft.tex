@@ -125,6 +125,57 @@ In Wallner and Cannistra's \cite{Wallner:2013} system minimum rates are only gua
 All these models implement bandwidth guarantees, but with shortcomings in the areas of link capacity utilization (in hard guarantees) and fairness of bandwidth distribution (in soft guarantees). This project will address these shortcomings by allowing excess link capacity to be used, and dynamically allocating the excess bandwidth fairly.
 
 %------------------------------------------------------------------
+% New Previous Work
+%------------------------------------------------------------------
+\section{New Previous Work}
+\label{nprev_work}
+
+The body of existing research relevant to this project can be classified in four major sections: hard guarantees, soft guarantees, flow monitoring, and scheduling algorithms. The first two sections refer to the two main paradigms that have emerged from the various methods of using OpenFlow enabled switches to obtain minimum bandwidth guarantees. A hard bandwidth guarantee uses a static reservation of network resources for the specified traffic, whereas a soft bandwidth guarantee uses a differentiated service approach with no reservation, in which some traffic is given priority over other traffic using only currently available network resources \cite{softqos}. The third sections refers to methods of monitoring network traffic passing through OpenFlow flows. In OpenFlow, a flow describes a set of packets transferred from one network endpoint to another endpoint. The endpoints may be defined as IP addresses, TCP/UDP ports, VLAN identifiers, or physical device ports, among others. A flow additionally defines the of rules describing the forwarding actions that the device should take for all packets belonging to that flow \cite{flowdef}. The final section refers to various network packet scheduling algorithms and discussions on their efficiency and fairness.
+
+\subsection{Hard Guarantee}
+\label{hard_qos}
+
+Designing methods of achieving hard bandwidth guarantees was the focus of research by Tomovic et al. \cite{Tomovic:2014}, Dwarakanathan et al. \cite{Dwara:2015}, and Egilmez et al. \cite{Egil}.
+\\
+
+
+\hspace{10mm} Tomovic et al. \cite{Tomovic:2014} argue that providing Quality of Service (QoS) guarantees to applications is an important objective of modern networks. With the rising popularity of real-time applications, especially in multimedia, the need arises for a network service model with performance guarantees. Current models (such as IntServ and DiffServ) lack adequate control, so QoS is currently often implemented by assigning separate physical networks with their own hardware to each class of traffic, incurring high operational expenditures and infrastructure costs. The paper aims to address this issue by designing a Software-Defined Networking (SDN) control environment to provide bandwidth guarantees between two points. The solution works by shifting network intelligence into a PoX SDN controller, which accepts/denies bandwidth requests, monitors network resources, and calculates traffic routes \cite{Tomovic:2014}. The solution is evaluated through a pair of experiments, which aim to demonstrate that the system can actually provide the minimum bandwidth guarantees between two points in the work. IntServ has been chosen as a baseline, and the results of each experiment are compared this baseline to measure improvement. This paper contributes to the body of QoS research by demonstrating the design of an SDN/OpenFlow control environment that provides bandwidth guarantees for priority flows in an automated manner, alleviating the need for distinct physical networks for multiple classes of service.
+
+
+\hspace{10mm} Dwarakanathan et al. \cite{Dwara:2015} argue that current QoS solutions are not sufficiently scalable. To address this they implemented a similar SDN environment to that of Tomovic et al. \cite{Tomovic:2014}, using a Floodlight SDN controller as the point of network intelligence instead of a PoX controller. Dwarakanathan's \cite{Dwara:2015} solution aims to be more scalable than that of Tomovic et al. \cite{Tomovic:2014} by using less queues in each switch. Instead of creating one queue per guaranteed flow as in Tomovic's \cite{Tomovic:2014} system, it instead uses only one queue shared between all guaranteed flows, whose minimum and maximum are dynamically adjusted as bandwidth requests are granted and previously granted flows expire. The solution is evaluated through experiments ran in the Mininet simulator, in which theoretical minimum rates are calculated and compared against the experimental results. This paper contributes to the body of QoS research by demonstrating that it is possible to create a scalable QoS solution with SDN. 
+
+\subsection{Soft Guarantee}
+\label{soft_qos}
+
+Designing methods of achieving soft bandwidth guarantees was the focus of research by Krishna et al. \cite{Krishna:2016}, Wallner and Cannistra \cite{Wallner:2013}, and Lee et al. \cite{SWLee}.
+\\
+
+
+\hspace{10mm} Krishna et al. \cite{Krishna:2016} argue that Quality of Service (QoS) is currently underutilized in provider networks, because it is too complicated to install and maintain. A response to this issue would be of great interest to large-scale internet service providers, who currently massively overprovision their networks at great cost. This paper aims to demonstrate how to use Software-Defined Networking (SDN) and the OpenFlow protocol’s QoS features to cheaply and efficiently implement minimum bandwidth guarantees in a network. The solution described in the paper uses a Ryu SDN controller communicating with an OpenFlow enabled switch, through which all QoS traffic will pass \cite{Krishna:2016}. The minimum bandwidth guarantee is applied by using a combination of the switch’s ingress meter table, and and egress queues. The ingress meters are used to aggregate traffic and redirect packets over the guaranteed minimum rate, and the egress queues and used to ensure priority traffic is transmitted first. The success of their solution is measured by the results of their three experiments. The first experiment tests the creation of new QoS flows in the system, the second tests traffic aggregation and prioritization, and the the third tests the responsiveness of the system. The experiments all have calculated theoretical expected results, and the effectiveness of the system is measured by how close the actual results come the expected results. The key metrics analyzed are bandwidth use for each flow, bandwidth use of the full channel, and time to adjust to changes in bandwidth usage. The paper contributes to the body of QoS knowledge by demonstrating how to implement minimum bandwidth guarantees using OpenFlow, while still allowing excess bandwidth to be shared without causing packet loss.
+
+
+\hspace{10mm} Wallner and Cannistra \cite{Wallner:2013} argue that different network services (such as Voice Over IP (VOIP), stored video streaming, and live video streaming) have different requirements in terms of latency and bandwidth, and that these services can be divided into classes based on these requirements. Their paper addresses this by presenting a proof of concept model for class-based QoS control using SDN. A floodlight SDN controller is used to control many switches in a network, and in each switch incoming packets are classified based on their Type of Service (ToS) bits in the IP header. From this point different classes are given different priorities as they leave the switch. In this system minimum rates are only guaranteed by class and not by individual client, and the excess bandwidth is only distributed on a first-come first-serve basis. The effectiveness of this solution is unclear, as no empirical methods of evaluation are mentioned in the paper. The paper contributes to the body of QoS research by demonstrating that it is possible to use SDN to implement class-based QoS.
+
+
+\subsection{Flow Monitoring}
+\label{flow_monitor}
+
+Designing methods of performing real-time monitoring of flow statistics was the focus of papers by van Adrichem et al. \cite{vanAdrichem}, Ren and Xu \cite{RenOF14}, and Wang \cite{WangMon}.
+\\
+
+
+\hspace{10mm} Van Adrichem et al. \cite{vanAdrichem} argue that a key requirement to implement effective QoS in an SDN network is accurate traffic monitoring, on a finely-grained (per flow) basis. They state that current flow-based measurement techniques are too resource hungry in terms of CPU and bandwidth usage. To address this issue they propose \textit{OpenNetMon}, a POX OpenFlow controller module enabling accurate monitoring of per-flow throughput, packet loss and delay metrics \cite{vanAdrichem}. \textit{OpenNetMon} improves upon current measurement techniques by optimizing the choice of which switches are polled, and the frequency which they are polled, in order to minimize network resource usage while maintaining high accuracy \cite{vanAdrichem}. \textit{OpenNetMon}'s effectiveness was evaluated by running an \textit{OpenNetMon} module as well as \textit{tcpstat} on a node, and comparing their monitoring statistics as well as CPU and bandwidth usage. This paper contributes to the body of SDN research by demonstrating that is is possible to efficiently perform per-flow monitoring.
+
+\subsection{Scheduling Algorithms}
+\label{algs}
+
+Design, and evaluation of network scheduling algorithms was the focus of papers by Anderson et al. \cite{Anderson2004FairSO}, Al-Somaidai et al. \cite{Basheer}, Balogh et al. \cite{Balogh}, Swetha et al. \cite{Swetha}, and Borve \cite{Brve2009PacketSA}.
+\\
+
+
+\hspace{10mm} Balogh et al. \cite{Balogh} argue that in a networking ecosystem that is increasingly making use of class-based priority QoS, the way how waiting packets in network nodes are selected for output is a significant factor for providing that QoS. In their paper they investigate three priority queuing based scheduling algorithms. The algorithms are Priority Queuing (PQ), Weighted Round Robin with Priority Queueing (WRRPQ), and Low Latency Queuing (LLQ) \cite{Balogh}. These algorithms all support strict priority queueing, in which time critical priority data can be transmit first. PQ is a simple strict priority algorithm, in which priority packets are sent first, and all other packets are sent in first-come first-serve \cite{Balogh}. WRRPQ is a combination of PQ and Weighted Round Robin, in which priority packets are sent first, and other packets are sent according to Weighted Round Robin \cite{Balogh}. LLQ is an algorithm which considers the time required to send each packet to minimize latency \cite{Balogh}. The algorithms were evaluated by testing each one in a simulated network using different kinds of traffic. The results found that effectiveness of each algorithm depended on the kind of traffic (LLQ better for VOIP, WRRPQ better for fixed size packets). This paper contributes to the body of QoS research by showing that there are different optimal priority queuing algorithms for class-based QoS depending on the type of traffic.
+
+%------------------------------------------------------------------
 % Solution
 %------------------------------------------------------------------
 \section{Solution}
