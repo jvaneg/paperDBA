@@ -203,6 +203,9 @@ Balogh et al. \cite{Balogh} argue that in a networking ecosystem that is increas
 \label{prev_work_conclusion}
 All these models implement bandwidth guarantees, but with shortcomings in the areas of link capacity utilization (in hard guarantees) and fairness of bandwidth distribution (in soft guarantees). This project addresses these shortcomings by allowing excess link capacity to be used, and dynamically fairly allocating the excess bandwidth.
 
+
+%commented out
+\iffalse
 %------------------------------------------------------------------
 % Solution
 %------------------------------------------------------------------
@@ -308,7 +311,7 @@ In hybrid proportional fairness (Table 3), each member has priority to use the e
 \fi
 
 The details of how each of these solutions will be implemented is yet to be determined, but they will be evaluated on their link capacity utilization and fairness. Without any dynamic solution, the system will behave as though first-come first-serve was implemented, so this will be the baseline to compare against.
-
+\fi
 
 %------------------------------------------------------------------
 % Methodology
@@ -323,7 +326,13 @@ This project implements a hybrid soft/hard QoS system, in a two-part solution. T
 
 switch BAD
 
+The unfortunate reality of implementing on a real switch is that OpenFlow is only a standard, and switch manufacturers may not correctly or completely implement the standard. This becomes increasingly apparent when taking advantage of OpenFlow's more recent or esoteric features. While most OpenFlow features work as expected on the Pica8, there are a few limitations that impacted the solution design or required workarounds. The specifics of the design changes are mentioned in the solution descriptions, but the problematic limitations are as follows: 
 
+\begin{itemize}
+\item The OpenFlow standard supports an arbitrary number of queues, whereas the Pica8 switch only supports 8 queues. This is a realistic hardware limitation, but it imposes scalability restrictions.
+\item The OpenFlow standard supports an arbitrary number of meter bands, whereas the Pica8 switch only supports two meter bands. This is also a realistic hardware limitation, but it significantly limits the potential utility of meters.
+\item The OpenFlow standard states that the DSCP remark meter action should occur before the flow action of its attached flow. On the Pica8 the DSCP remark action and the flow action happen in parallel. In most cases this results in the same behaviour, except when the flow action is to direct the packet to another set of flows. According to OpenFlow the packet should be remarked and then sent to the next set of flows, allowing the next set of flows to match on the remarked field. In reality the remark is not applied until the packet leaves the switch, and the next set of flows will not be able to match on the remarked field. This is a significant departure from the intended functionality and requires a substantial workaround.
+\end{itemize}
 
 \subsection{Minimum Bandwidth Guarantee}
 \label{min_bandwidth}
@@ -361,7 +370,7 @@ Any substantial discussion is currently awaiting the completed implementation an
 \section{Conclusion}
 \label{conclusion}
 
-In conclusion, this research project will address the issue of excess unused bandwidth in networks providing QoS bandwidth guarantees. It will do this through SDN/OpenFlow by guaranteeing minimum rates, while allowing excess bandwidth to be shared according to a variety of fair distribution models. The effectiveness of the solution will be evaluated by analyzing link capacity utilization and fairness of distribution.
+Any substantial conclusion is currently awaiting the completed implementation and testing of the described systems.
 
 %------------------------------------------------------------------
 % Bibliography
