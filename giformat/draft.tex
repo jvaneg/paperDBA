@@ -94,7 +94,19 @@ Quality of Service (QoS) control typically refers to network mechanisms used to 
 \subsection{Key Definitions}
 \label{definitions}
 
-yeet whats a METER whats a METER BAND whats a FLOW whats DSCP remark whats a QUEUE
+When discussing an OpenFlow switch in the context of this research there are several important terms to understand: Flows, meters, meter bands, Differentiated Services Code Point (DSCP) remark, and queues.
+\\
+
+In OpenFlow, a flow describes a set of packets transferred from one network endpoint to another endpoint. The endpoints may be defined as IP addresses, TCP/UDP ports, VLAN identifiers, or physical device ports, among others. A flow additionally defines the of rules describing the forwarding actions that the device should take for all packets belonging to that flow \cite{flowdef}. Flows may be manually installed on a switch, or installed by the SDN controller.
+
+Meters are flow monitoring tools which allow the rate monitoring of traffic going into the switch (ingress traffic). Meters are attached to specific flows, and can perform operations based on the rate of traffic entering those flow, specifically dropping or DSCP remarking packets.
+
+Meter bands are a feature of meters that allow them to perform operations on traffic in a flow. A meter band defines a rate threshold and an action, such that when the rate of traffic passing through the meter passes that threshold, the action is applied to all traffic over the threshold.
+
+DSCP remark is a possible action that can be chosen for a meter band. The DSCP remark action is provided a 6-bit value, and will write that value to the Type of Service (TOS)/DSCP field in the IP header of all packets that trigger the meter band. This is important because flows are able to match on the DSCP field, allowing for traffic differentiation.
+
+Finally, queues are the complements to meters for traffic leaving the switch (egress traffic). They are also attached to specific flows, and all traffic passing through the flow is placed into the attached queue. The packets in the queue are then processed at specified minimum and/or maximum rates. On most switches queues are given a priority and are serviced strictly according to their priority, but some switches have support for other queueing algorithms such as round-robin or weighted round-robin.
+
 
 %commented out
 \iffalse
@@ -126,13 +138,15 @@ In Wallner and Cannistra's \cite{Wallner:2013} system minimum rates are only gua
 \\\\
 All these models implement bandwidth guarantees, but with shortcomings in the areas of link capacity utilization (in hard guarantees) and fairness of bandwidth distribution (in soft guarantees). This project will address these shortcomings by allowing excess link capacity to be used, and dynamically allocating the excess bandwidth fairly.
 \fi
+
+
 %------------------------------------------------------------------
 % Previous Work
 %------------------------------------------------------------------
 \section{Previous Work}
 \label{prev_work}
 
-The body of existing research relevant to this project can be classified in four major sections: hard guarantees, soft guarantees, flow monitoring, and scheduling algorithms. The first two sections refer to the two main paradigms that have emerged from the various methods of using OpenFlow enabled switches to obtain minimum bandwidth guarantees. A hard bandwidth guarantee uses a static reservation of network resources for the specified traffic, whereas a soft bandwidth guarantee uses a differentiated service approach with no reservation, in which some traffic is given priority over other traffic using only currently available network resources \cite{softqos}. The third sections refers to methods of monitoring network traffic passing through OpenFlow flows. In OpenFlow, a flow describes a set of packets transferred from one network endpoint to another endpoint. The endpoints may be defined as IP addresses, TCP/UDP ports, VLAN identifiers, or physical device ports, among others. A flow additionally defines the of rules describing the forwarding actions that the device should take for all packets belonging to that flow \cite{flowdef}. The final section refers to various network packet scheduling algorithms and discussions on their efficiency and fairness.
+The body of existing research relevant to this project can be classified in four major sections: hard guarantees, soft guarantees, flow monitoring, and scheduling algorithms. The first two sections refer to the two main paradigms that have emerged from the various methods of using OpenFlow enabled switches to obtain minimum bandwidth guarantees. A hard bandwidth guarantee uses a static reservation of network resources for the specified traffic, whereas a soft bandwidth guarantee uses a differentiated service approach with no reservation, in which some traffic is given priority over other traffic using only currently available network resources \cite{softqos}. The third sections refers to methods of monitoring network traffic passing through OpenFlow flows. The final section refers to various network packet scheduling algorithms and discussions on their efficiency and fairness.
 
 \subsection{Hard Guarantee}
 \label{hard_qos}
