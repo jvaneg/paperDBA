@@ -324,9 +324,7 @@ This project implements a hybrid soft/hard QoS system, in a two-part solution. T
 \subsection{Technical Limitations}
 \label{tech_limitations}
 
-switch BAD
-
-The unfortunate reality of implementing on a real switch is that OpenFlow is only a standard, and switch manufacturers may not correctly or completely implement the standard. This becomes increasingly apparent when taking advantage of OpenFlow's more recent or esoteric features. While most OpenFlow features work as expected on the Pica8, there are a few limitations that impacted the solution design or required workarounds. The specifics of the design changes are mentioned in the solution descriptions, but the problematic limitations are as follows: 
+The unfortunate reality of implementing on a real switch is that OpenFlow is only a standard, and switch manufacturers may not correctly or completely implement the standard. This becomes increasingly apparent when taking advantage of OpenFlow's more recent or esoteric features. While most OpenFlow features work as expected on the Pica8, there are a few limitations that impacted the solution design or required workarounds. The specific problematic limitations are as follows: 
 
 \begin{itemize}
 \item The OpenFlow standard supports an arbitrary number of queues, whereas the Pica8 switch only supports 8 queues. This is a realistic hardware limitation, but it imposes scalability restrictions.
@@ -334,12 +332,37 @@ The unfortunate reality of implementing on a real switch is that OpenFlow is onl
 \item The OpenFlow standard states that the DSCP remark meter action should occur before the flow action of its attached flow. On the Pica8 the DSCP remark action and the flow action happen in parallel. In most cases this results in the same behaviour, except when the flow action is to direct the packet to another set of flows. According to OpenFlow the packet should be remarked and then sent to the next set of flows, allowing the next set of flows to match on the remarked field. In reality the remark is not applied until the packet leaves the switch, and the next set of flows will not be able to match on the remarked field. This is a significant departure from the intended functionality and requires a substantial workaround.
 \end{itemize}
 
+The details of the design changes resulting from these limitations are mentioned in the solution descriptions. 
+
 \subsection{Minimum Bandwidth Guarantee}
 \label{min_bandwidth}
 
-min bandiwdth GOOD
 
-put diagram here
+The minimum bandwidth guarantee was initially planned to be achieved through a system in which each client would have a corresponding meter and queue assigned to them, with one best effort queue to handle excess traffic (Figure 1). The meter would use one meter band set to the client's minimum allocated bandwidth. All traffic under the client's minimum rate would be put into its corresponding flow, while all excess traffic would be DSCP remarked by the meter and directed to the best effort queue. Each client's queue's minimum rate would be set to the client's allocated rate, guaranteeing that the client would never go below that rate. Any excess bandwidth would be used for traffic in the excess traffic queue, allowing for the use of the excess bandwidth. While promising, this system was abandoned because it was not scalable, as for $n$ clients it would require $n+1$ queues, and the Pica8 switch can only support 8 queues.\\
+
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/bwGuar_v1.png}
+	\caption{ Initial Pica8 setup for minimum bandwidth guarantee. } \label{bwDiag1}
+\end{figure*}
+
+To address the scalability issue, the minimum bandwidth guarantee design was reworked to use a similar method to Krishna’s \cite{Krishna:2016} system (Figure 2). It was implemented using an OpenFlow enabled Pica8 switch, using egress queues, ingress meters, and a Ryu SDN controller remotely controlling the switch. The egress queues are set in a strict priority system, in which the higher priority queue always goes first. The highest priority queue is used for guaranteed rate traffic, and the lower priority queues are used for traffic over clients’ guaranteed minimum rates. The ingress meters are used for traffic aggregation and setting the minimum rate for each client. Each individual client has a meter assigned to them, which measures incoming/outgoing traffic. The meter directs all traffic under the guaranteed bandwidth (meter maximum rate) to the highest priority queue, ensuring that it will be transmitted first. All traffic over the guaranteed rate is DSCP remarked and directed to a second set of flows, which redirected to the lower priority queues by matching on the packets' remarked DSCP field. This redirection guarantees the minimum rate for each client so long as the system obeys the equation:
+
+\begin{eqnarray*}
+	\sum M_{max} &\leq& R
+\end{eqnarray*}
+
+Where $M_{max}$ is a meter maximum rate, and $R$ is the link transmission rate. This is to say the minimum rates will always be guaranteed so long as the sum of the minimum rates is not greater than the maximum link rate. This solution requires a minimum of only two queues for n clients, addressing the initial design's scalability issue.
+
+
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/bwGuar_v2.png}
+	\caption{ Modified Pica8 setup for minimum bandwidth guarantee. } \label{bwDiag2}
+\end{figure*}
+
+Unfortunately the second design was also subject to a technical limitation, as using DSCP remark to redirect traffic to lower priority queues did not perform as expected, due to the Pica8's aforementioned incorrect implementation of DSCP remark. Since the DSCP remark would still apply after the packet left the switch, the issue was resolved by routing remarked traffic to a second Pica8 switch, and installing the egress queues and second set of flows on the second switch instead of the first. This workaround treats the two switches combined as one entity, with the first switch functioning as the ingress point performing the metering and DSCP remark, and the second switch functioning as the egress point redirecting remarked packets to their appropriate queues.
+
 
 \subsection{Dynamic Bandwidth Allocation}
 \label{min_bandwidth}
