@@ -367,9 +367,81 @@ Unfortunately the second design was also subject to a technical limitation, as u
 \subsection{Dynamic Bandwidth Allocation}
 \label{min_bandwidth}
 
-dba GOOD
 
-put other diagram here and put the tables back in
+Having implemented minimum bandwidth guarantees, the second part of the solution is the ability to distribute the excess bandwidth. This is done by implementing various distribution algorithms in the SDN controller. The controller reads real-time bandwidth usage for each client from the flows and adjusts how the traffic is redirected dynamically according to what algorithm is in use. This system builds onto the guaranteed bandwidth solution by adding another meter band for each meter, and one more queue to the switch (Figure 3). The first meter band's trigger rate is set to the the client's guaranteed minimum bandwidth, sending all traffic under this rate to the high priority queue. The second meter band's trigger rate is set higher than the minimum bandwidth, but is not fixed. Traffic above the first band's rate but below the second band's rate is sent to the medium priority queue. Traffic above the second band's rate is sent to the low priority queue. This creates a three tier priority differentiation of traffic, the first tier for guaranteed traffic, the second tier for dynamically allocated excess traffic, and the third tier for extreme excess traffic. What the second meter band's trigger rate is set to depends on the dynamic allocation algorithm in use, but all algorithms will have some common elements. In each algorithm the SDN controller repeatedly polls the switch flows for their bandwidth usage, allowing the controller to determine the current demanded rate for each client. With this information the controller calculates the amount of excess bandwidth available, and divides it among the currently active clients depending on their current demand and the chosen dynamic bandwidth algorithm. The division is done by setting the second meter bands' trigger rates such that for all clients the sum of the bandwidth captured in the second tier of traffic is equal to the current excess bandwidth available in the link. The controller frequently repeats this process to continuously adapt the system to changing traffic demands, and in this fashion dynamically allocates the excess bandwidth. Because this is a reactive system, the third tier of traffic (extreme excess) exists to capture traffic that the controller has not yet compensated for, ensuring that no packets are dropped and the demand polling remains accurate. 
+
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/dbaFramework.png}
+	\caption{ Pica8 setup with support for dynamic bandwidth allocation algorithms. } \label{dbaDiag}
+\end{figure*}
+
+The design required for bandwidth guarantees puts some restrictions on algorithm design. Only the ingress meter settings can be changed dynamically, and the egress queues must have a strict priority system, meaning the higher priority will always transmit first. This means that it is non-trivial to implement any dynamic allocation algorithm outside first-come first-serve, even an algorithm as simple as round robin will require some creativity to implement while maintaining the bandwidth guarantees. Accordingly, the three implemented allocation solutions are relatively simple: egalitarian fairness, proportional fairness, and hybrid proportional fairness.
+
+In egalitarian fairness (Table 1), an equal share of the excess bandwidth is given to all members upon demand. This aims to treat all members as equals regardless of the minimum service they use. This solution is implemented by dividing the excess bandwidth equally between all currently active clients up to a maximum of their demand. This solution is inspired by the round robin scheduling algorithm.
+
+\begin{table}[htpb]
+	\label{egalitarian_table}
+	\vspace{-3mm}
+	\begin{center}
+		\begin{small}
+			\begin{tabular}{cccc}
+				%\hline
+				Client & Minimum & Demand & Allocation \\
+				\hline
+				Client 1 & 100 & 300 & 200 \\
+				Client 2 & 200 & 400 & 300 \\
+				Client 3 & 300 & 500 & 400 \\
+			\end{tabular}
+		\end{small}
+	\end{center}
+	\caption{Example of egalitarian fairness (Total bandwidth: 900 Mbps)}
+	\vspace{-3mm}
+\end{table}
+
+In proportional fairness (Table 2), the share of the excess bandwidth given to each member upon demand is in proportion to its allocated minimum bandwidth guarantee. This aims to give members attributed a higher minimum service a better share of the excess bandwidth. This solution is implemented by dividing the excess bandwidth between all currently active clients up to a maximum of their demand, weighting the allocation by their minimum bandwidth. This solution is inspired by weighted round robin scheduling algorithm.
+
+\begin{table}[htpb]
+	\label{proportional_table}
+	\vspace{-3mm}
+	\begin{center}
+		\begin{small}
+			\begin{tabular}{cccc}
+				%\hline
+				Client & Minimum & Demand & Allocation \\
+				\hline
+				Client 1 & 100 & 300 & 150 \\
+				Client 2 & 200 & 400 & 300 \\
+				Client 3 & 300 & 500 & 450 \\
+			\end{tabular}
+		\end{small}
+	\end{center}
+	\caption{Example of proportional fairness (Total bandwidth: 900 Mbps)}
+	\vspace{-3mm}
+\end{table}
+
+In hybrid proportional fairness (Table 3), each member has priority to use the excess bandwidth up to a fraction of its allocated minimum bandwidth, and the remainder is equally shared. This aims to give preference to higher usage members as in proportional fairness, but with a limitation that prevents them from dominating the channel. This solution is implemented by dividing the excess bandwidth between all currently active clients up to a maximum of their demand, starting by allocating up to 1/$X$th of their minimum bandwidth for each client, and then equally after that.
+
+\begin{table}[h]
+	\label{hybrid_table}
+	\vspace{-3mm}
+	\begin{center}
+		\begin{small}
+			\begin{tabular}{cccc}
+				%\hline
+				Client & Minimum & Demand & Allocation \\
+				\hline
+				Client 1 & 100 & 300 & 190 \\
+				Client 2 & 200 & 400 & 300 \\
+				Client 3 & 300 & 500 & 410 \\
+			\end{tabular}
+		\end{small}
+	\end{center}
+	\caption{Example of hybrid proportional fairness (Total bandwidth: 900 Mbps, 1/10th of minimum prioritized )}
+	\vspace{-3mm}
+\end{table}
+
+In all cases all excess bandwidth is used and fairly distributed according to the algorithm's definition of fairness.
 
 %------------------------------------------------------------------
 % Results
@@ -378,6 +450,8 @@ put other diagram here and put the tables back in
 \label{results}
 
 Any results are currently awaiting the completed implementation and testing of the described systems. The success of the results will be evaluated by analyzing link capacity utilization and fairness of distribution.
+
+The current expectation is that the solution will be very effective for UDP traffic and consistent traffic, but may experience performance problems with TCP traffic and bursty traffic. TCP is expected to have worse performance because the system lacks the ability to determine which packets are part of a TCP communication, and may put TCP packets in a low priority queue, leading to retransmissions. Bursty traffic is expected to have worse performance because the system is reactive, and may not be able to adjust quickly enough to be optimal for short bursts of traffic.
 
 %------------------------------------------------------------------
 % Discussion
