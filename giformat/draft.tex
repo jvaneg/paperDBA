@@ -16,6 +16,10 @@
 \usepackage{epsfig}
 \usepackage{newalg}
 
+\usepackage{caption}
+\captionsetup[table]{skip=0pt}
+\captionsetup[table]{font=small}
+
 % \usepackage{url}
 % \bibliographystyle{IEEEtran.bst}
 
@@ -33,8 +37,8 @@
 
 \newauthor{mm}{Joel van Egmond}{}
 % Can add more authors
-%\newauthor{se}{Someone Else}{}
-%\newauthor{ya}{Yet Another}{}
+\newauthor{se}{Maryam Elahi}{}
+\newauthor{ya}{Mea Wang}{}
 %\newauthor{fa}{Fourth Author}{}
 
 % Common affiliation
@@ -352,7 +356,7 @@ To address the scalability issue, the minimum bandwidth guarantee design was rew
 	\sum M_{max} &\leq& R
 \end{eqnarray*}
 
-Where $M_{max}$ is a meter maximum rate, and $R$ is the link transmission rate. This is to say the minimum rates will always be guaranteed so long as the sum of the minimum rates is not greater than the maximum link rate. This solution requires a minimum of only two queues for n clients, addressing the initial design's scalability issue.
+where $M_{max}$ is a meter maximum rate, and $R$ is the link transmission rate. This is to say the minimum rates will always be guaranteed so long as the sum of the minimum rates is not greater than the maximum link rate. This solution requires a minimum of only two queues for n clients, addressing the initial design's scalability issue.
 
 
 \begin{figure*}
@@ -375,6 +379,8 @@ Having implemented minimum bandwidth guarantees, the second part of the solution
 	\includegraphics[width=6in]{figs/dbaFramework.png}
 	\caption{ Pica8 setup with support for dynamic bandwidth allocation algorithms. } \label{dbaDiag}
 \end{figure*}
+
+EXPLAIN FIX TO THIS
 
 The design required for bandwidth guarantees puts some restrictions on algorithm design. Only the ingress meter settings can be changed dynamically, and the egress queues must have a strict priority system, meaning the higher priority will always transmit first. This means that it is non-trivial to implement any dynamic allocation algorithm outside first-come first-serve, even an algorithm as simple as round robin will require some creativity to implement while maintaining the bandwidth guarantees. Accordingly, the three implemented allocation solutions are relatively simple: egalitarian fairness, proportional fairness, and hybrid proportional fairness.
 
@@ -453,6 +459,349 @@ Any results are currently awaiting the completed implementation and testing of t
 
 The current expectation is that the solution will be very effective for UDP traffic and consistent traffic, but may experience performance problems with TCP traffic and bursty traffic. TCP is expected to have worse performance because the system lacks the ability to determine which packets are part of a TCP communication, and may put TCP packets in a low priority queue, leading to retransmissions. Bursty traffic is expected to have worse performance because the system is reactive, and may not be able to adjust quickly enough to be optimal for short bursts of traffic.
 
+\subsection{Test Setups}
+\label{result_setups}
+
+testbed diagrams/explanation for why theres a loop
+
+\subsection{Tests}
+\label{result_tests}
+
+describe the conflict and non conflict tests, that they are run on every setup
+describe the over time test for dba
+
+\subsection{No Guarantee}
+\label{no_guar}
+
+Intro of tests.
+
+non compete
+
+\begin{table}[h]
+	\label{ng_nc}
+	\vspace{-3mm}
+	\begin{center}
+		\begin{small}
+			\begin{tabular}{cccc}
+				%\hline
+				Protocol & Host & Demand & Actual \\
+				\hline
+				UDP & Host 1 & 200 & 210\\
+				    & Host 2 & 300 & 315\\
+				\hline
+				TCP & Host 1 & 200 & 210\\
+				    & Host 2 & 300 & 315\\
+			\end{tabular}
+		\end{small}
+	\end{center}
+	\caption{Bandwidth usage for non-competing hosts in no guarantee setup.\\
+	Host 1 minimum rate guarantee: 100 Mbps\\
+	Host 2 minimum rate guarantee: 200 Mbps\\	
+	Total available bandwidth: 600 Mbps}
+	\vspace{-3mm}
+\end{table}
+
+short analysis
+
+compete
+
+\begin{table}[h]
+	\label{ng_c}
+	\vspace{-3mm}
+	\begin{center}
+		\begin{small}
+			\begin{tabular}{cccc}
+				%\hline
+				Protocol & Host & Demand & Actual \\
+				\hline
+				UDP & Host 1 & 400 & 301\\
+				    & Host 2 & 400 & 301\\
+				\hline
+				TCP & Host 1 & 400 & 315\\
+				    & Host 2 & 400 & 277\\
+			\end{tabular}
+		\end{small}
+	\end{center}
+	\caption{Bandwidth usage for competing hosts in no guarantee setup.\\
+	Host 1 minimum rate guarantee: 100 Mbps\\
+	Host 2 minimum rate guarantee: 200 Mbps\\	
+	Total available bandwidth: 600 Mbps}
+	\vspace{-3mm}
+\end{table}
+
+short analysis
+
+\subsection{Minimum Rate Guarantee}
+\label{min_guar}
+
+Intro of tests.
+
+non compete
+
+\begin{table}[h]
+	\label{mg_nc}
+	\vspace{-3mm}
+	\begin{center}
+		\begin{small}
+		\setlength\tabcolsep{1.5pt}
+			\begin{tabular}{cccccc}
+				%\hline
+				Protocol & Host & Demand & Actual & High Prio & Remarked \\
+				\hline
+				UDP & Host 1 & 200 & 210 & 96 & 111\\
+				    & Host 2 & 300 & 315 & 192 & 119\\
+				\hline
+				TCP & Host 1 & 200 & 210 & 96 & 115\\
+				    & Host 2 & 300 & 315 & 192 & 125\\
+			\end{tabular}
+		\end{small}
+	\end{center}
+	\caption{Bandwidth usage for non-competing hosts in minimum guarantee setup.\\
+	Host 1 minimum rate guarantee: 100 Mbps\\
+	Host 2 minimum rate guarantee: 200 Mbps\\	
+	Total available bandwidth: 600 Mbps}
+	\vspace{-3mm}
+\end{table}
+
+short analysis
+
+compete
+
+\begin{table}[h]
+	\label{mg_c}
+	\vspace{-3mm}
+	\begin{center}
+		\begin{small}
+		\setlength\tabcolsep{1.5pt}
+			\begin{tabular}{cccccc}
+				%\hline
+				Protocol & Host & Demand & Actual & High Prio & Remarked \\
+				\hline
+				UDP & Host 1 & 400 & 322 & 96 & 319\\
+				    & Host 2 & 400 & 322 & 192 & 223\\
+				\hline
+				TCP & Host 1 & 400 & 233 & 96 & 103\\
+				    & Host 2 & 400 & 359 & 191 & 145\\
+			\end{tabular}
+		\end{small}
+	\end{center}
+	\caption{Bandwidth usage for competing hosts in minimum guarantee setup.\\
+	Host 1 minimum rate guarantee: 100 Mbps\\
+	Host 2 minimum rate guarantee: 200 Mbps\\	
+	Total available bandwidth: 600 Mbps}
+	\vspace{-3mm}
+\end{table}
+
+short analysis
+
+\subsection{Egalitarian Fairness}
+\label{dba_egal}
+
+Intro of tests.
+
+non compete
+
+\begin{table}[h]
+	\label{egal_nc}
+	\vspace{-3mm}
+	\begin{center}
+		\begin{small}
+		\setlength\tabcolsep{1.5pt}
+			\begin{tabular}{cccccccc}
+				%\hline
+				Protocol & Host & Demand & Expected & Actual & High & Mid & Low\\
+				\hline
+				UDP & Host 1 & 200 & 200 & 199 & 98 & 109 & 4\\
+				    & Host 2 & 300 & 300 & 307 & 199 & 117 & 3\\
+				\hline
+				TCP & Host 1 & 200 & 200 & 75 & 63 & 5 & 13\\
+				    & Host 2 & 300 & 300 & 315 & 199 & 127 & 1\\
+			\end{tabular}
+		\end{small}
+	\end{center}
+	\caption{Bandwidth usage for non-competing hosts in egalitarian fairness setup.\\
+	Host 1 minimum rate guarantee: 100 Mbps\\
+	Host 2 minimum rate guarantee: 200 Mbps\\	
+	Total available bandwidth: 600 Mbps}
+	\vspace{-3mm}
+\end{table}
+
+short analysis
+
+compete
+
+\begin{table}[h]
+	\label{egal_c}
+	\vspace{-3mm}
+	\begin{center}
+		\begin{small}
+		\setlength\tabcolsep{1.5pt}
+			\begin{tabular}{cccccccc}
+				%\hline
+				Protocol & Host & Demand & Expected & Actual & High & Mid & Low\\
+				\hline
+				UDP & Host 1 & 400 & 250 & 242 & 98 & 178 & 175\\
+				    & Host 2 & 400 & 350 & 370 & 197 & 175 & 38\\
+				\hline
+				TCP & Host 1 & 400 & 250 & 85 & 73 & 6 & 14\\
+				    & Host 2 & 400 & 350 & 419 & 197 & 234 & 3\\
+			\end{tabular}
+		\end{small}
+	\end{center}
+	\caption{Bandwidth usage for competing hosts in egalitarian fairness setup.\\
+	Host 1 minimum rate guarantee: 100 Mbps\\
+	Host 2 minimum rate guarantee: 200 Mbps\\	
+	Total available bandwidth: 600 Mbps}
+	\vspace{-3mm}
+\end{table}
+
+short analysis
+
+Over time graphs
+
+short analysis
+
+\subsection{Proportional Fairness}
+\label{dba_prop}
+Intro of tests.
+
+non compete
+
+\begin{table}[h]
+	\label{prop_nc}
+	\vspace{-3mm}
+	\begin{center}
+		\begin{small}
+		\setlength\tabcolsep{1.5pt}
+			\begin{tabular}{cccccccc}
+				%\hline
+				Protocol & Host & Demand & Expected & Actual & High & Mid & Low\\
+				\hline
+				UDP & Host 1 & 200 & 200 & 199 & 98 & 109 & 4\\
+				    & Host 2 & 300 & 300 & 308 & 198 & 118 & 2\\
+				\hline
+				TCP & Host 1 & 200 & 200 & 86 & 78 & 5 & 15\\
+				    & Host 2 & 300 & 300 & 314 & 197 & 96 & 19\\
+			\end{tabular}
+		\end{small}
+	\end{center}
+	\caption{Bandwidth usage for non-competing hosts in proportional fairness setup.\\
+	Host 1 minimum rate guarantee: 100 Mbps\\
+	Host 2 minimum rate guarantee: 200 Mbps\\	
+	Total available bandwidth: 600 Mbps}
+	\vspace{-3mm}
+\end{table}
+
+short analysis
+
+compete
+
+\begin{table}[h]
+	\label{prop_c}
+	\vspace{-3mm}
+	\begin{center}
+		\begin{small}
+		\setlength\tabcolsep{1.5pt}
+			\begin{tabular}{cccccccc}
+				%\hline
+				Protocol & Host & Demand & Expected & Actual & High & Mid & Low\\
+				\hline
+				UDP & Host 1 & 400 & 200 & 198 & 98 & 102 & 223\\
+				    & Host 2 & 400 & 400 & 397 & 197 & 207 & 13\\
+				\hline
+				TCP & Host 1 & 400 & 200 & 91 & 73 & 6 & 14\\
+				    & Host 2 & 400 & 400 & 419 & 197 & 235 & 2\\
+			\end{tabular}
+		\end{small}
+	\end{center}
+	\caption{Bandwidth usage for competing hosts in proportional fairness setup.\\
+	Host 1 minimum rate guarantee: 100 Mbps\\
+	Host 2 minimum rate guarantee: 200 Mbps\\	
+	Total available bandwidth: 600 Mbps}
+	\vspace{-3mm}
+\end{table}
+
+short analysis
+
+Over time graphs
+
+short analysis
+
+\subsection{Hybrid Proportional Fairness}
+\label{dba_hybr}
+Intro of tests.
+
+non compete
+
+\begin{table}[h]
+	\label{hybr_nc}
+	\vspace{-3mm}
+	\begin{center}
+		\begin{small}
+		\setlength\tabcolsep{1.5pt}
+			\begin{tabular}{cccccccc}
+				%\hline
+				Protocol & Host & Demand & Expected & Actual & High & Mid & Low\\
+				\hline
+				UDP & Host 1 & 200 & 200 & 201 & 98 & 110 & 3\\
+				    & Host 2 & 300 & 300 & 309 & 199 & 120 & 1\\
+				\hline
+				TCP & Host 1 & 200 & 200 & 103 & 75 & 15 & 17\\
+				    & Host 2 & 300 & 300 & 315 & 197 & 128 & 0\\
+			\end{tabular}
+		\end{small}
+	\end{center}
+	\caption{Bandwidth usage for non-competing hosts in hybrid proportional fairness setup.\\
+	1/10th of minimum prioritized\\	
+	Host 1 minimum rate guarantee: 100 Mbps\\
+	Host 2 minimum rate guarantee: 200 Mbps\\	
+	Total available bandwidth: 600 Mbps}
+	\vspace{-3mm}
+\end{table}
+
+short analysis
+
+compete
+
+\begin{table}[h]
+	\label{hybr_c}
+	\vspace{-3mm}
+	\begin{center}
+		\begin{small}
+		\setlength\tabcolsep{1.5pt}
+			\begin{tabular}{cccccccc}
+				%\hline
+				Protocol & Host & Demand & Expected & Actual & High & Mid & Low\\
+				\hline
+				UDP & Host 1 & 400 & 245 & 238 & 98 & 149 & 180\\
+				    & Host 2 & 400 & 355 & 369 & 197 & 170 & 37\\
+				\hline
+				TCP & Host 1 & 400 & 245 & 80 & 67 & 5 & 13\\
+				    & Host 2 & 400 & 355 & 419 & 198 & 236 & 4\\
+			\end{tabular}
+		\end{small}
+	\end{center}
+	\caption{Bandwidth usage for competing hosts in hybrid proportional fairness setup.\\
+	1/10th of minimum prioritized\\
+	Host 1 minimum rate guarantee: 100 Mbps\\
+	Host 2 minimum rate guarantee: 200 Mbps\\	
+	Total available bandwidth: 600 Mbps}
+	\vspace{-3mm}
+\end{table}
+
+short analysis
+
+Over time graphs
+
+short analysis
+
+\subsection{Overall Result Analysis}
+\label{result_analysis}
+
+UDP good
+TCP bad
+
+
 %------------------------------------------------------------------
 % Discussion
 %------------------------------------------------------------------
@@ -460,6 +809,11 @@ The current expectation is that the solution will be very effective for UDP traf
 \label{discussion}
 
 Any substantial discussion is currently awaiting the completed implementation and testing of the described systems.
+
+Overall, is the approach we took promising?
+What different approach or variant of this approach is better?
+What follow-up work should be done next?
+What did we learn by doing this project?
 
 %------------------------------------------------------------------
 % Conclusion
