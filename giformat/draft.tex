@@ -111,40 +111,7 @@ Meter bands are a feature of meters that allow them to perform operations on tra
 
 DSCP remark is a possible action that can be chosen for a meter band. The DSCP remark action is provided a 6-bit value, and will write that value to the Type of Service (TOS)/DSCP field in the IP header of all packets that trigger the meter band. This is important because flows are able to match on the DSCP field, allowing for traffic differentiation.
 
-Finally, queues are the complements to meters for traffic leaving the switch (egress traffic). They are also attached to specific flows, and all traffic passing through the flow is placed into the attached queue. The packets in the queue are then processed at specified minimum and/or maximum rates. On most switches queues are given a priority and are serviced strictly according to their priority, but some switches have support for other queueing algorithms such as round-robin or weighted round-robin.
-
-
-%commented out
-\iffalse
-%------------------------------------------------------------------
-% Previous Work
-%------------------------------------------------------------------
-\section{Old Previous Work}
-\label{oprev_work}
-
-Previous work that has been conducted relating to this project is focused various methods of using OpenFlow enabled switches to obtain minimum bandwidth guarantees. These focused on two main paradigms: hard guarantees and soft guarantees \cite{softqos}. A hard bandwidth guarantee uses a static reservation of network resources for the specified traffic, whereas a soft bandwidth guarantee uses a differentiated service approach with no reservation, in which some traffic is given priority over other traffic using only currently available network resources. 
-
-\subsection{Hard Guarantee}
-\label{prev_hard_qos}
-
-In a 2014 paper, Tomovic et al. \cite{Tomovic:2014} proposed a system with hard QoS guarantees using OpenFlow. The hard guarantee is established by forcing all flows to request bandwidth on the link. The SDN controller evaluates each request and allocates bandwidth to the requesting flow if there is capacity on the link, otherwise the request is rejected. Once allocated, the bandwidth is reserved for exclusive use by that flow until the flow expires. The guarantee is implemented on the switch level by installing an egress queue with minimum and maximum bandwidth equal to the guaranteed bandwidth.
-
-In a later paper, Dwarakanathan et al. \cite{Dwara:2015} designed a similar hard QoS system also using OpenFlow, with the goal of using less queues. Instead of creating one queue per guaranteed flow as in Tomovic's \cite{Tomovic:2014} system, it instead uses only one queue shared between all guaranteed flows, whose minimum and maximum are dynamically adjusted as bandwidth requests are granted and previously granted flows expire.
-
-In both of these systems, the maximum rate is equal to the guaranteed rate, preventing the flow from ever exceeding its guaranteed rate. This means that any unreserved bandwidth goes unused, resulting in sub-optimal link capacity utilization. They also both rely on all nodes in the network between the start and end points allocating resources, which introduces scalability difficulties. 
-
-\subsection{Soft Guarantee}
-\label{prev_soft_qos}
-
-In their 2013 paper, Wallner and Cannistra \cite{Wallner:2013} implemented a soft QoS system using the Floodlight SDN controller. The paper presents a proof of concept model for class-based QoS control. First, incoming packets are classified based on their ToS/DSCP bits in the IP header. Then, class-based priority traffic shaping is implemented in switches along the path using egress queues.
-
-In a paper closely linked to this project, Krishna et al. \cite{Krishna:2016} designed a hybrid soft QoS which used an OpenFlow enabled switch to allow QoS flows to guarantee a minimum rate while still being able to send more than their guaranteed rates, as long as they do not hinder other guaranteed and/or best-effort flows. The system classifies packets similar to Wallner and Cannistra's \cite{Wallner:2013}, but will only prioritize traffic up to their guaranteed minimum rate. Excess traffic is given lower priority and transmitted on a first-come first-serve basis. Additionally, this system in only needs to be implemented in a single switch, easing the scalability difficulties.
-
-In Wallner and Cannistra's \cite{Wallner:2013} system minimum rates are only guaranteed by class and not by individual client, and in both systems the excess bandwidth is only distributed on a first-come first-serve basis, allowing clients with high traffic to unfairly dominate the channel.
-\\\\
-All these models implement bandwidth guarantees, but with shortcomings in the areas of link capacity utilization (in hard guarantees) and fairness of bandwidth distribution (in soft guarantees). This project will address these shortcomings by allowing excess link capacity to be used, and dynamically allocating the excess bandwidth fairly.
-\fi
-
+Finally, queues are the complements to meters for traffic leaving the switch (egress traffic), in that they provide a mechanism for controlling the rate of egress traffic instead of ingress traffic. They are also attached to specific flows, and all traffic passing through the flow is placed into the attached queue. The packets in the queue are then processed at specified minimum and/or maximum rates. On most switches queues are given a priority and are serviced strictly according to their priority, but some switches have support for other queueing algorithms such as round-robin or weighted round-robin.
 
 %------------------------------------------------------------------
 % Previous Work
@@ -157,7 +124,7 @@ The body of existing research relevant to this project can be classified in four
 \subsection{Hard Guarantee}
 \label{hard_qos}
 
-Designing methods of achieving hard bandwidth guarantees was the focus of research by Tomovic et al. \cite{Tomovic:2014} and Dwarakanathan et al. \cite{Dwara:2015}.
+Designing methods of achieving hard bandwidth guarantees for SDN enabled networks was the focus of research by Tomovic et al. \cite{Tomovic:2014} and Dwarakanathan et al. \cite{Dwara:2015}.
 \\
 
 
@@ -172,7 +139,7 @@ In all of these systems, the maximum rate is equal to the guaranteed rate, preve
 \subsection{Soft Guarantee}
 \label{soft_qos}
 
-Designing methods of achieving soft bandwidth guarantees was the focus of research by Krishna et al. \cite{Krishna:2016} and Wallner and Cannistra \cite{Wallner:2013}.
+Designing methods of achieving soft bandwidth guarantees for SDN enabled networks was the focus of research by Krishna et al. \cite{Krishna:2016} and Wallner and Cannistra \cite{Wallner:2013}.
 \\
 
 
@@ -188,7 +155,7 @@ In Wallner and Cannistra's \cite{Wallner:2013} system minimum rates are only gua
 \subsection{Flow Monitoring}
 \label{flow_monitor}
 
-Designing methods of performing real-time monitoring of flow statistics was the focus of a paper by van Adrichem et al. \cite{vanAdrichem}.
+Designing methods of performing real-time monitoring of flow statistics for SDN enabled networks was the focus of a paper by van Adrichem et al. \cite{vanAdrichem}.
 \\
 
 
@@ -198,7 +165,7 @@ Van Adrichem et al. \cite{vanAdrichem} argue that a key requirement to implement
 \subsection{Scheduling Algorithms}
 \label{algs}
 
-Design, and evaluation of network scheduling algorithms was the focus of a paper by Balogh et al. \cite{Balogh}.
+Design, and evaluation of network scheduling algorithms for efficient and priority-based traffic was the focus of a paper by Balogh et al. \cite{Balogh}.
 \\
 
 
@@ -208,116 +175,6 @@ Balogh et al. \cite{Balogh} argue that in a networking ecosystem that is increas
 
 \label{prev_work_conclusion}
 All these models implement bandwidth guarantees, but with shortcomings in the areas of link capacity utilization (in hard guarantees) and fairness of bandwidth distribution (in soft guarantees). This project addresses these shortcomings by allowing excess link capacity to be used, and dynamically fairly allocating the excess bandwidth.
-
-
-%commented out
-\iffalse
-%------------------------------------------------------------------
-% Solution
-%------------------------------------------------------------------
-\section{Solution}
-\label{solution}
-
-This project aims to implement a hybrid soft/hard QoS system, in which minimum bandwidth is given a hard guarantee for each client, and excess bandwidth is available for use. It will address the shortcomings of previous work by including dynamic allocation of the excess bandwidth beyond only first-come first-serve, and functioning as a single-switch solution.
-
-\subsection{Minimum Bandwidth Guarantee}
-\label{sol_min_band}
-
-The minimum bandwidth guarantee will be achieved through a similar method to Krishna’s \cite{Krishna:2016} system. It will be implemented using an OpenFlow enabled switch, using egress queues, ingress meters, and an SDN controller remotely controlling the switch. The egress queues will be set in a strict priority system, in which the higher priority queue always goes first. The highest priority queue will be used for guaranteed rate traffic, and the lower priority queues will be used for traffic over clients’ guaranteed minimum rates. The ingress meters will be used for traffic aggregation and setting the minimum rate for each client. Each individual client will have a meter assigned to them, which will measure incoming/outgoing traffic. The meter will direct all traffic under the guaranteed bandwidth (meter maximum rate) to the highest priority queue, ensuring that it will be transmitted first. All traffic over the guaranteed rate will be redirected to the lower priority queues, depending on the dynamic allocation algorithm being used. This redirection will guarantee the minimum rate for each client so long as the system obeys the equation:
-
-\begin{eqnarray*}
-	\sum M_{max} &\leq& R
-\end{eqnarray*}
-
-Where $M_{max}$ is a meter maximum rate, and $R$ is the link transmission rate. This is to say the minimum rates will always be guaranteed so long as the sum of the minimum rates is not greater than the maximum link rate.
-
-\subsection{Dynamic Bandwidth Allocation}
-\label{sol_dynamic_alloc}
-
-Once bandwidth guarantees are implemented, the rest of the excess bandwidth will need to be distributed. This will be done by implementing various distribution algorithms in the SDN controller. The controller will read real-time bandwidth usage for each client from the meters and adjust how the traffic is redirected dynamically according to what algorithm is in use. 
-
-The design required for bandwidth guarantees puts some restrictions on algorithm design. Only the ingress meter settings can be changed dynamically, and the egress queues have a strict priority system, meaning the higher priority will always transmit first. This means that it is non-trivial to implement any dynamic allocation algorithm outside first-come first-serve, even an algorithm as simple as round robin will require some creativity to implement while maintaining the bandwidth guarantees. Accordingly, the three planned allocation solutions are relatively simple: egalitarian fairness, proportional fairness, and hybrid proportional fairness.
-
-In egalitarian fairness, an equal share of the excess bandwidth is given to all members upon demand. This aims to treat all members as equals regardless of the minimum service they use. This solution is inspired by the round robin scheduling algorithm.
-
-%commented out
-\iffalse
-In egalitarian fairness (Table 1), an equal share of the excess bandwidth is given to all members upon demand. This solution is inspired by the round robin scheduling algorithm. \\
-
-\begin{table}[htpb]
-	\label{egalitarian_table}
-	\vspace{-3mm}
-	\begin{center}
-		\begin{small}
-			\begin{tabular}{cccc}
-				%\hline
-				Client & Minimum & Demand & Allocation \\
-				\hline
-				Client 1 & 100 & 300 & 200 \\
-				Client 2 & 200 & 400 & 300 \\
-				Client 3 & 300 & 500 & 400 \\
-			\end{tabular}
-		\end{small}
-	\end{center}
-	\caption{Example of egalitarian fairness (Total bandwidth: 900 Mbps)}
-	\vspace{-3mm}
-\end{table}
-\fi
-
-In proportional fairness, the share of the excess bandwidth given to each member upon demand is in proportion to its allocated minimum bandwidth guarantee. This aims to give members attributed a higher minimum service a better share of the excess bandwidth.This solution is inspired by weighted round robin scheduling algorithm.
-
-%commented out
-\iffalse
-In proportional fairness (Table 2), the share of the excess bandwidth given to each member upon demand is in proportion to its allocated minimum bandwidth guarantee. This solution is inspired by weighted round robin scheduling algorithm. \\
-
-\begin{table}[htpb]
-	\label{proportional_table}
-	\vspace{-3mm}
-	\begin{center}
-		\begin{small}
-			\begin{tabular}{cccc}
-				%\hline
-				Client & Minimum & Demand & Allocation \\
-				\hline
-				Client 1 & 100 & 300 & 150 \\
-				Client 2 & 200 & 400 & 300 \\
-				Client 3 & 300 & 500 & 450 \\
-			\end{tabular}
-		\end{small}
-	\end{center}
-	\caption{Example of proportional fairness (Total bandwidth: 900 Mbps)}
-	\vspace{-3mm}
-\end{table}
-\fi
-
-In hybrid proportional fairness, each member has priority to use the excess bandwidth up to a fraction of its allocated minimum bandwidth, and the remainder is equally shared. This aims to give preference to higher usage members as in proportional fairness, but with a limitation that prevents them from dominating the channel.
-
-%commented out
-\iffalse
-In hybrid proportional fairness (Table 3), each member has priority to use the excess bandwidth up to a fraction of its allocated minimum bandwidth, and the remainder is equally shared. \\
-
-\begin{table}[h]
-	\label{hybrid_table}
-	\vspace{-3mm}
-	\begin{center}
-		\begin{small}
-			\begin{tabular}{cccc}
-				%\hline
-				Client & Minimum & Demand & Allocation \\
-				\hline
-				Client 1 & 100 & 300 & 190 \\
-				Client 2 & 200 & 400 & 300 \\
-				Client 3 & 300 & 500 & 410 \\
-			\end{tabular}
-		\end{small}
-	\end{center}
-	\caption{Example of hybrid proportional fairness (Total bandwidth: 900 Mbps, 1/10th of minimum prioritized )}
-	\vspace{-3mm}
-\end{table}
-\fi
-
-The details of how each of these solutions will be implemented is yet to be determined, but they will be evaluated on their link capacity utilization and fairness. Without any dynamic solution, the system will behave as though first-come first-serve was implemented, so this will be the baseline to compare against.
-\fi
 
 %------------------------------------------------------------------
 % Methodology
@@ -498,7 +355,7 @@ Five main classes of test were used for evaluation, each class testing two diffe
 
 All test scenarios have a maximum link capacity of 600 Mbps, and use a minimum rate of 100 Mbps for Host 1, and 200 Mbps for Host 2. In the non-competing scenario, Host 1 has a demand of 200 Mbps, and Host 2 has a demand of 300 Mbps. In the competing scenario, both Host 1 and 2 have demands of 400 Mbps.
 
-An additional test was run for each of the dynamic allocation algorithms, in which the hosts change their demand over the course of the test to demonstrate the dynamic adaptivity of the algorithms. In this test TEST DETAILS
+An additional test was run for each of the dynamic allocation algorithms, in which the hosts change their demand over the course of the test to demonstrate the dynamic adaptivity of the algorithms. In this test one host begins by sending the receiver packets at 400 Mbps, with no competition. After 15 seconds, the second host begins sending the receiver packets at 500 Mbps, creating competition between the two hosts. Another 15 seconds later, and the first host ceases to send packets, allowing the second host to transmit at 500 Mbps for the remaining 15 seconds of the test.
 
 In each test the receiving host (Host 3) is ran iperf\cite{iperf} in server mode, and the other hosts (Host 1 and 2) connected using iperf in client mode. The sending hosts then send data at the specified bandwidth through iperf until the test is complete.
 
@@ -557,7 +414,7 @@ The non-competing (Table 4) results show that actual bandwidth was within 5\% of
 	\vspace{-3mm}
 \end{table}
 
-The competing (Table 5) results indicate
+The competing (Table 5) results show that the sum of the actual bandwidths came within 1\% of the link capacity, showing ideal link capacity utilization for both UDP and TCP traffic. The distribution of excess bandwidth was based only on demand with no regard for the minimum rates, as each host demanded the same bandwidth and while the full bandwidth was split evenly, the excess 300 Mbps above the min rates was not distributed evenly, with Host 1 receiving 66\% and Host 2 receiving 33\%. These results indicate that with no guarantees link capacity utilization is good, but there is no form of fairness, the host who demands more bandwidth above their minimum rate receiving more without consideration for other hosts.   
 
 \subsection{Minimum Rate Guarantee}
 \label{min_guar}
@@ -616,7 +473,7 @@ The non-competing (Table 6) results show that actual bandwidth was within 5\% of
 	\vspace{-3mm}
 \end{table}
 
-short analysis
+The competing (Table 7) results show that the sum of the actual bandwidths were within 1\% of the link capacity for TCP, and above the link capacity for UDP (likely due to iperf bandwidth burst during polling), showing ideal link capacity utilization for both UDP and TCP traffic. The distribution of excess bandwidth was similar to no guarantee; based on demand with no regard for the minimum rates, as each host demanded the same bandwidth and while the full bandwidth was split relatively evenly, the excess 300 Mbps above the minimum rates was not distributed evenly, with Host 1 receiving 66\% and Host 2 receiving 33\%. These results indicate that with minimum guarantees link capacity utilization is good, but there is no form of fairness, the host who demands more bandwidth above their minimum rate receiving more without consideration for other hosts.
 
 \subsection{Egalitarian Fairness}
 \label{dba_egal}
@@ -648,9 +505,7 @@ Both non-competing (Table 8) and competing (Table 9) scenarios were run on the m
 	\vspace{-3mm}
 \end{table}
 
-The non-competing (Table 8) results show that . These results indicate that with sum bandwidth demands under link capacity, host demand can be met in full for both UDP and TCP.
-
-compete
+The non-competing (Table 8) results show that actual bandwidth was within 5\% of the expected bandwidth, and the high priority bandwidth was within 5\% of the minimum rate for each host for UDP traffic. This indicates that for UDP traffic under egalitarian fairness with sum bandwidth demands under link capacity, theoretical expected fairness can be met in full, and minimum rates are given priority. Inversely, TCP performance was overall very poor. Host 2 saw an acceptable 5\% deviation from actual to expected with minimum rate maintained, but Host 1 fell a full 62\% below the expected bandwidth, and its high priority traffic fell 37\% below its minimum rate. This disparity is likely caused by retransmissions due to TCP sequences being separated into different queues, elaborated upon further in the overall results analysis.
 
 \begin{table}[h]
 	\label{egal_c}
@@ -677,9 +532,7 @@ compete
 	\vspace{-3mm}
 \end{table}
 
-short analysis
-
-Over time graphs
+The competing (Table 9) results show that actual bandwidth was within 6\% of the expected bandwidth, and the high priority bandwidth was within 5\% of the minimum rate for each host for UDP traffic. This indicates that for UDP traffic under egalitarian fairness with sum bandwidth demands over the link capacity, theoretical expected fairness can be met in full, minimum rates are given priority, and link capacity is fully utilized. As in the non-competing scenario, TCP performance was poor. Host 2's actual usage was 20\% above the expected with its minimum rate maintained, but Host 1 was 66\% below its expected bandwidth, and its high priority traffic fell 27\% below its minimum rate. This disparity is likely caused by retransmissions due to TCP sequences being separated into different queues, elaborated upon further in the overall results analysis.
 
 \begin{figure*}
 	\centering
@@ -699,7 +552,7 @@ Over time graphs
 	\caption{ Egalitarian allocation - adaptivity over time - Host 2 details. } \label{dbae_ot_h2}
 \end{figure*}
 
-short analysis
+From the dynamic adaptivity test for egalitarian allocation (Figures 8, 9, 10), it can be seen that the controller's egalitarian fairness algorithm is responsive to changes in bandwidth use by each host. Initially while Host 1 demanded 400 Mbps, it was allocated 400 Mbps as there was no competition. When Host 2 created competition by demanding 500 Mbps, Host 1 was allocated 250 Mbps and Host 2 was allocated 350 Mbps. This is correct according to the egalitarian algorithm, as the excess bandwidth of 300 Mbps was split evenly between the two hosts and added to their minimum rates, resulting in 100 + 150 = 250 Mbps for Host 1, and 200 + 150 = 350 Mbps for Host 2. Finally when Host 1 ceased to transmit and competition ended Host 2 was allocated the full 500 Mbps it was demanding. These results indicate that the egalitarian fairness algorithm is properly responsive to changing bandwidth requirements.
 
 \subsection{Proportional Fairness}
 \label{dba_prop}
@@ -731,7 +584,7 @@ Both non-competing (Table 10) and competing (Table 11) scenarios were run on the
 	\vspace{-3mm}
 \end{table}
 
-The non-competing (Table 10) results show that . These results indicate that with sum bandwidth demands under link capacity, host demand can be met in full for both UDP and TCP.
+The non-competing (Table 10) results show that actual bandwidth was within 5\% of the expected bandwidth, and the high priority bandwidth was within 5\% of the minimum rate for each host for UDP traffic. This indicates that for UDP traffic under proporional fairness with sum bandwidth demands under link capacity, theoretical expected fairness can be met in full, and minimum rates are given priority. As in egalitarian fairness, TCP performance was very poor. Host 2 saw an acceptable 5\% deviation from actual to expected with minimum rate maintained, but Host 1 fell 57\% below the target expected bandwidth, and its high priority traffic fell 22\% below its minimum rate. This disparity is likely caused by retransmissions due to TCP sequences being separated into different queues, elaborated upon further in the overall results analysis.
 
 \begin{table}[h]
 	\label{prop_c}
@@ -758,9 +611,7 @@ The non-competing (Table 10) results show that . These results indicate that wit
 	\vspace{-3mm}
 \end{table}
 
-short analysis
-
-Over time graphs
+The competing (Table 11) results show that actual bandwidth was within 5\% of the expected bandwidth, and the high priority bandwidth was within 5\% of the minimum rate for each host for UDP traffic. This indicates that for UDP traffic under proportional fairness with sum bandwidth demands over the link capacity, theoretical expected fairness can be met in full, minimum rates are given priority as expected, and link capacity is fully utilized. As in the non-competing scenario, TCP performance was very poor. Host 2's actual usage was 4\% above the expected with its minimum rate maintained, but Host 1 was 55\% below its expected bandwidth, and its high priority traffic fell 27\% below its minimum rate. This disparity is likely caused by retransmissions due to TCP sequences being separated into different queues, elaborated upon further in the overall results analysis.
 
 \begin{figure*}
 	\centering
@@ -780,7 +631,7 @@ Over time graphs
 	\caption{ Proportional allocation - adaptivity over time - Host 2 details. } \label{dbap_ot_h2}
 \end{figure*}
 
-short analysis
+From the dynamic adaptivity test for proportional allocation (Figures 11, 12, 13), it can be seen that the controller's proportional fairness algorithm is responsive to changes in bandwidth use by each host. Initially while Host 1 demanded 400 Mbps, it was allocated 400 Mbps as there was no competition. When Host 2 created competition by demanding 500 Mbps, Host 1 was allocated 200 Mbps and Host 2 was allocated 400 Mbps. This is correct according to the proportional algorithm, as the excess bandwidth of 300 Mbps was split proportionally based on minimum rate between the two hosts (33\% for Host 1 and 66\% for Host 2) and added to their minimum rates, resulting in 100 + 100 = 200 Mbps for Host 1, and 200 + 200 = 400 Mbps for Host 2. Finally when Host 1 ceased to transmit and competition ended Host 2 was allocated the full 500 Mbps it was demanding. These results indicate that the proportional fairness algorithm is properly responsive to changing bandwidth requirements.
 
 \subsection{Hybrid Proportional Fairness}
 \label{dba_hybr}
@@ -813,7 +664,7 @@ Both non-competing (Table 12) and competing (Table 13) scenarios were run on the
 	\vspace{-3mm}
 \end{table}
 
-The non-competing (Table 12) results show that . These results indicate that with sum bandwidth demands under link capacity, host demand can be met in full for both UDP and TCP.
+The non-competing (Table 12) results are once again positive for UDP traffic, showing that the actual bandwidth was within 5\% of the expected bandwidth, and the high priority bandwidth was within 5\% of the minimum rate for each host. This indicates that for UDP traffic under hybrid proporional fairness with sum bandwidth demands under link capacity, theoretical expected fairness can be met in full, and minimum rates are given priority. Just as in the previous two algorithms, TCP performance was poor. Host 2 saw an acceptable 5\% deviation from actual to expected with minimum rate maintained, but Host 1 deviated 48\% below its expected bandwidth, and its high priority traffic fell 25\% below its guaranteed minimum rate. This disparity is likely caused by retransmissions due to TCP sequences being separated into different queues, elaborated upon further in the overall results analysis.
 
 \begin{table}[h]
 	\label{hybr_c}
@@ -841,9 +692,7 @@ The non-competing (Table 12) results show that . These results indicate that wit
 	\vspace{-3mm}
 \end{table}
 
-short analysis
-
-Over time graphs
+The competing (Table 13) results show that actual bandwidth was within 3\% of the expected bandwidth, and the high priority bandwidth was within 5\% of the minimum rate for each host for UDP traffic. This indicates that for UDP traffic under hyrbid proportional fairness with sum bandwidth demands over the link capacity, theoretical expected fairness can be met in full, minimum rates are given priority as expected, and link capacity is fully utilized. As in the non-competing scenario and previous two competing scenarios, TCP performance was overall very poor. Host 2's actual usage was 18\% above the expected with its minimum rate maintained, but Host 1 was 67\% below its expected bandwidth, and its high priority traffic fell 33\% below its minimum rate. This disparity is likely caused by retransmissions due to TCP sequences being separated into different queues, elaborated upon further in the overall results analysis.
 
 \begin{figure*}
 	\centering
@@ -863,14 +712,12 @@ Over time graphs
 	\caption{ Hybrid proportional allocation - adaptivity over time - Host 2 details. } \label{dbah_ot_h2}
 \end{figure*}
 
-short analysis
+From the dynamic adaptivity test for hybrid proportional allocation (Figures 12, 13, 14), it can be seen that the controller's hybrid proportional fairness algorithm is responsive to changes in bandwidth use by each host. Initially while Host 1 demanded 400 Mbps, it was allocated 400 Mbps as there was no competition. When Host 2 created competition by demanding 500 Mbps, Host 1 was allocated 245 Mbps and Host 2 was allocated 355 Mbps. This is correct according to the hybrid proportional algorithm, as up to 1/10th of the minimum rate for each host was allocated to them (10 and 20 Mbps respectively), and the remaining 270 Mbps of excess bandwidth was split evenly between the two hosts and added to their minimum rates, resulting in 100 + 10 + 135  = 245 Mbps for Host 1, and 200 + 20 + 135 = 355 Mbps for Host 2. Finally when Host 1 ceased to transmit and competition ended Host 2 was allocated the full 500 Mbps it was demanding. These results indicate that the hybrid proportional fairness algorithm is properly responsive to changing bandwidth requirements.
 
 \subsection{Overall Result Analysis}
 \label{result_analysis}
 
-UDP good
-TCP bad
-
+Overall UDP performance was very close to expectations, while TCP performance was very poor. This is likely due to TCP sequences and retransmissions. The dynamic allocation system does not have the ability to distinguish TCP packets based on their sequence numbers, and thus may (and very frequently does) split TCP sequences into separate queues as soon as traffic goes above a meter trigger rate. These packets are often very delayed or dropped entirely if there is sufficient congestion, causing frequent timeouts and retransmissions from the client not receiving acknowledgements. This leads to a shrinking of the TCP window size, and a lower overall throughput. This also explains why TCP performance is noticeably higher for one of the two competing hosts. The host with the poor performance is always the host with a lower minimum rate and a higher demand. This means more TCP packets are split into disparate queues earlier, along with a lowered window size and consequently lower throughput earlier. Since the worse perfoming host's throughput drops, the better performing host is allocated more bandwidth by the dynamic allocation algorithms, leading to one host having very poor performance and the other having abnormally high performance. UDP traffic was not affected by this problem since the UDP protocol does not make use of sequencing or retransmission, so packets being dropped due to congestion has no greater effect on throughput.
 
 %------------------------------------------------------------------
 % Discussion
@@ -878,12 +725,13 @@ TCP bad
 \section{Discussion}
 \label{discussion}
 
-Any substantial discussion is currently awaiting the completed implementation and testing of the described systems.
+Overall, the SDN switch approach to dynamic bandwidth allocation is promising. It provides a platform for a variety of algorithms to operate on, and while the current egalitarian, proportional, and hybrid proportional distribution algorithms may not be ideal, their ability to all run on the same platform provides opportunity for future superior algorithms to improve upon current performance problems.
 
-Overall, is the approach we took promising?
-What different approach or variant of this approach is better?
-What follow-up work should be done next?
-What did we learn by doing this project?
+A superior variant of the project would be one that runs entirely on one switch using multiple flow tables as originall designed. Using multiple switches greatly complicates the implementation of any dynamic allocation platform and instroduces bottlenecks in terms of the links between the switches, which will never be as fast as the the internal connections within one switch. While this was impossible with current hardware, this variant would be feasible should hardware more closely adhering to the OpenFlow standard should enter production.
+
+The logical follow-up research for this project would be to pursue the improvement of TCP performance. There are some mechanisms unused in this project that have the potential to improve TCP performance, such as dynamically changing the meter burst sizes, which dictate the size of the blocks of packets held at the meter before performing the meter operation on them. Higher burst sizes or burst sizes proportional to demand could reduce the amount of dropped packets in a TCP sequence, and minimize the amount of required retransmissions. Weighted Random Early Detection (WRED) egress queues could also improve TCP performance, as they selectively drop packets from the queue during congestion to minimize the amount of packets dropped, again reducing retransmissions.
+
+The key learning gained from this project is that with the current SDN hardware ecosystem, no assumptions can be made about the implementability of a theoretical solution on real hardware, no matter if it would be possible according to the OpenFlow standard. There are many possible avenues for failure, and anyone developing for SDN enabled hardware must be prepared to modify or completely reassess their solutions upon discovering relevant hardware limitations.
 
 %------------------------------------------------------------------
 % Conclusion
@@ -891,7 +739,7 @@ What did we learn by doing this project?
 \section{Conclusion}
 \label{conclusion}
 
-Any substantial conclusion is currently awaiting the completed implementation and testing of the described systems.
+In conclusion, this project has shown that it is possible to use SDN and an OpenFlow enabled switch to enable dynamic bandwidth allocation of excess bandwidth while maintaining minimum rate guarantees for UDP traffic in a high volume network. This can be done by using the OpenFlow meter construct along with DSCP remark to create a traffic tiering system, in which minimum rates can be guaranteed, and excess bandwidth can be allocated fairly and dynamically. Unfortunately to do so requires comprimising on many design choices due to hardware limitations, as the SDN hardware ecosystem has yet to reach full compliance with the OpenFlow standard. While such a system has good performance with UDP traffic, TCP traffic is far less performant due to the lack of methods to avoid dropping or reordering the sequence of TCP packets, causing significant retransmissions and low effective bandwidth usage. With the current hardware limitations and low ability to interact with TCP packets, this solution cannot currently be recommended for production use in a real network, though with the rapid advance of the SDN field it may become feasible in the near future.
 
 %------------------------------------------------------------------
 % Bibliography
