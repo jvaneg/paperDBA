@@ -19,6 +19,7 @@
 \usepackage{caption}
 \captionsetup[table]{skip=0pt}
 \captionsetup[table]{font=small}
+\captionsetup{labelfont={bf,it}, textfont=it}
 
 % \usepackage{url}
 % \bibliographystyle{IEEEtran.bst}
@@ -80,7 +81,8 @@ OpenFlow, Ryu, software defined networking, traffic shaping, quality of service.
 \section{Introduction}
 \label{intro}
 
-Quality of Service (QoS) control typically refers to network mechanisms used to guarantee a certain service from the network \cite{Krishna:2016}. Minimum bandwidth is a service frequently guaranteed by QoS. Internet service providers (ISPs) are common users of QoS technology. Traditional ISPs such as Bell, Telus, and Shaw aim to maximize profits and avoid having excess unused bandwidth by overselling their channel to more clients than it can support, with the assumption that not all clients will be using the channel simultaneously. In contrast, many other large-scale service providers, such as the research and education focused Cybera, ORION, and MRnet do not oversell their channel, opting to use QoS controls to guarantee each client that their allocated bandwidth will always be available even if every other client is currently using their own maximum allocated bandwidth. Consequently, these networks often have significant amounts of excess idle bandwidth, since it is very unlikely that every client will be actively using the network at all times. Currently the bandwidth is wasted while the operation and maintenance costs of the full channel must still be paid. This leads to the problem of how to make use of all this excess bandwidth, while still maintaining the minimum bandwidth guarantees demanded by the clients.
+Quality of Service (QoS) control typically refers to network mechanisms used to guarantee a certain service from the network \cite{Krishna:2016}. For example, minimum bandwidth is a service frequently guaranteed by QoS. Internet service providers (ISPs) are common users of QoS technology. Traditional ISPs such as Bell, Telus, and Shaw aim to maximize profits and avoid having excess unused bandwidth by overselling their channel to more clients than it can support, with the assumption that not all clients will be using the channel simultaneously. In contrast, many other large-scale service providers, such as the research and education focused Cybera, ORION, and MRnet do not oversell their channel, opting to use QoS controls to guarantee each client that their allocated bandwidth will always be available even if every other client is currently using their own maximum allocated bandwidth. Consequently, these networks often have significant amounts of excess idle bandwidth, since it is very unlikely that every client will be actively using the network at all times. Currently this bandwidth is wasted while the operation and maintenance costs of the full channel must still be paid. This leads to the problem of how to make use of all of this excess bandwidth, while still maintaining the minimum bandwidth guarantees demanded by the clients. One potential technology for solving this problem
+ is Software-Defined Networking.
 
 Software-Defined Networking (SDN) is an emerging network paradigm that decouples network control and forwarding functions, enabling network control to be directly programmable \cite{opennetworking}. This is done by implementing the network control function in a centralized controller node, which communicates to all the network devices in the network through a standardized protocol. OpenFlow is one such protocol; an open standard protocol that acts as an abstracted switch interface to allow the SDN controller to control the routers/switches in its domain \cite{sdx}.
 
@@ -98,7 +100,7 @@ This research contributes to the body of QoS research by presenting an original 
 \subsection{Key Definitions}
 \label{definitions}
 
-When discussing an OpenFlow switch in the context of this research there are several important terms to understand: Flows, meters, meter bands, Differentiated Services Code Point (DSCP) remark, and queues.
+When discussing an OpenFlow switch in the context of this research there are several important terms: flows, meters, meter bands, Differentiated Services Code Point (DSCP) remark, and queues.
 \\
 
 In OpenFlow, a flow describes a set of packets transferred from one network endpoint to another endpoint. The endpoints may be defined as IP addresses, TCP/UDP ports, VLAN identifiers, or physical device ports, among others. A flow additionally defines the of rules describing the forwarding actions that the device should take for all packets belonging to that flow \cite{flowdef}. Flows may be manually installed on a switch, or installed by the SDN controller.
@@ -332,7 +334,7 @@ The unfortunate reality of implementing on a real switch is that OpenFlow is onl
 
 \begin{itemize}
 \item The OpenFlow standard supports an arbitrary number of queues, whereas the Pica8 switch only supports 8 queues. This is a realistic hardware limitation, but it imposes scalability restrictions.
-\item The OpenFlow standard supports an arbitrary number of meter bands, whereas the Pica8 switch only supports two meter bands. This is also a realistic hardware limitation, but it significantly limits the potential utility of meters.
+\item The OpenFlow standard supports an arbitrary number of meter bands, whereas the Pica8 switch only supports one meter band. This is also a realistic hardware limitation, but it significantly limits the potential utility of meters.
 \item The OpenFlow standard states that the DSCP remark meter action should occur before the flow action of its attached flow. On the Pica8 the DSCP remark action and the flow action happen in parallel. In most cases this results in the same behaviour, except when the flow action is to direct the packet to another set of flows. According to OpenFlow the packet should be remarked and then sent to the next set of flows, allowing the next set of flows to match on the remarked field. In reality the remark is not applied until the packet leaves the switch, and the next set of flows will not be able to match on the remarked field. This is a significant departure from the intended functionality and requires a substantial workaround.
 \end{itemize}
 
@@ -380,7 +382,13 @@ Having implemented minimum bandwidth guarantees, the second part of the solution
 	\caption{ Pica8 setup with support for dynamic bandwidth allocation algorithms. } \label{dbaDiag}
 \end{figure*}
 
-EXPLAIN FIX TO THIS
+Unfortunately this solution was also subject to hardware limitations, specifically regarding the number of available meter bands. The Pica8 switch supports only one meter band per meter, meaning that traffic can only be split in two ways at each meter; unmarked and marked traffic. To compensate for this the system was redesigned to use a second set of meters in place of a second set of meter bands (Figure 4). In this modified setup the trigger rate of the second set of meters is modified by the controller instead of the second set of meter bands, but otherwise the setup behaves similarly. On the first switch, the first set of meters (tier 1 meters) split traffic into guaranteed bandwidth (tier 1 traffic), and the combination of dynamically allocated excess traffic and extreme excess traffic (tier 2 and tier 3 traffic). The tier 1 traffic is sent to the high priority queue on the third switch, while the tier 2 and tier 3 traffic is sent to second set of meters (tier 2 meters) on the second switch. The tier 2 meters then split the combined tier 2 and tier 3 traffic into separate tier 2 and tier 3 streams. The tier 2 stream is sent to the medium priority queue on the third switch, and the tier 3 stream is sent to the low priority queue of the third switch. This setup ultimately produces the same results as the original would have, at the cost of requiring a three switches instead of just two.
+
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/dbaFrame2.png}
+	\caption{ Modified Pica8 setup for minimum bandwidth guarantee to compensate for insufficient meter bands. } \label{dbaDiag2}
+\end{figure*}
 
 The design required for bandwidth guarantees puts some restrictions on algorithm design. Only the ingress meter settings can be changed dynamically, and the egress queues must have a strict priority system, meaning the higher priority will always transmit first. This means that it is non-trivial to implement any dynamic allocation algorithm outside first-come first-serve, even an algorithm as simple as round robin will require some creativity to implement while maintaining the bandwidth guarantees. Accordingly, the three implemented allocation solutions are relatively simple: egalitarian fairness, proportional fairness, and hybrid proportional fairness.
 
@@ -454,32 +462,54 @@ In all cases all excess bandwidth is used and fairly distributed according to th
 %------------------------------------------------------------------
 \section{Results}
 \label{results}
+%Any results are currently awaiting the completed implementation and testing of the described systems. The success of the results will be evaluated by analyzing link capacity utilization and fairness of distribution.
+%
+%The current expectation is that the solution will be very effective for UDP traffic and consistent traffic, but may experience performance problems with TCP traffic and bursty traffic. TCP is expected to have worse performance because the system lacks the ability to determine which packets are part of a TCP communication, and may put TCP packets in a low priority queue, leading to retransmissions. Bursty traffic is expected to have worse performance because the system is reactive, and may not be able to adjust quickly enough to be optimal for short bursts of traffic.
 
-Any results are currently awaiting the completed implementation and testing of the described systems. The success of the results will be evaluated by analyzing link capacity utilization and fairness of distribution.
-
-The current expectation is that the solution will be very effective for UDP traffic and consistent traffic, but may experience performance problems with TCP traffic and bursty traffic. TCP is expected to have worse performance because the system lacks the ability to determine which packets are part of a TCP communication, and may put TCP packets in a low priority queue, leading to retransmissions. Bursty traffic is expected to have worse performance because the system is reactive, and may not be able to adjust quickly enough to be optimal for short bursts of traffic.
+All results were gathered by running a series of test cases on actual hardware setups, in which multiple hosts sent traffic to one other host. Each test gathered data about how much bandwidth was received in each of the priority queues, and how much effective bandwidth each host received (accounting for retransmissions). Success of the tests was evaluated in two ways: First by link capacity utilization, which compares the sum bandwidth usage for all hosts to the full link capacity. Second by fairness of distribution, where the bandwidth usage for each individual host is compared to the theoretical fair distribution as determined by each dynamic allocation algorithm.   
 
 \subsection{Test Setups}
 \label{result_setups}
 
-testbed diagrams/explanation for why theres a loop
+Three different test setups were used to evaluate this construction. A no guarantee setup, a minimum guarantee setup, and a dynamic allocation setup. The no guarantee setup (Figure 5) is a single switch with three hosts and no controller, meant to demonstrate the behaviour of a switch with no minimum rate guarantees or dynamic allocation. The minimum guarantee setup (Figure 6) implements the minimum rate guarantee design (Figure 2). It is two switches, three hosts, and no controller, meant to demonstrate the behaviour of a switch with minimum rate guarantees but without any controller-based dynamic allocation. The dynamic allocation setup (Figure 7) implements the dynamic allocation design (Figure 4). It is two switches, three hosts, and a controller connected to each host, meant to demonstrate the behaviour of a switch with dynamic allocation enabled. The same dynamic allocation setup is used to test all three dynamic allocations. Notice that this setup only uses two switches, even though it was previously explained that three switches are required for the dynamic allocation algorithms to work. For this project only two switches were available, so to simulate a third switch, traffic was routed in a loop out of one port in the second switch and back into another port in the same switch. With careful flow management and manual ARP routing this allowed the second switch to both output and match on remarked packets, mimicking a third switch. 
+
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/no_guar_setup.png}
+	\caption{ No guarantee test setup. } \label{no_guar_setup}
+\end{figure*}
+
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/min_guar_setup.png}
+	\caption{ Minimum guarantee test setup. Implements the minimum rate guarantee design (Figure 2). } \label{min_guar_setup}
+\end{figure*}
+
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/dba_setup.png}
+	\caption{ Dynamic allocation test setup. Implements the dynamic allocation design (Figure 4). } \label{dba_setup}
+\end{figure*}
 
 \subsection{Tests}
 \label{result_tests}
 
-describe the conflict and non conflict tests, that they are run on every setup
-describe the over time test for dba
+Five main classes of test were used for evaluation, each class testing two different scenarios, once with UDP and once with TCP. The first two classes of test correspond to the no guarantee and minimum guarantee test setups. The other three classes of test correspond to the three dynamic allocation algorithms; dynamic egalitarian fairness, dynamic proportional fairness, and dynamic hybrid proportional fairness, all of which used the dynamic allocation test setup. For each of the test classes the same two scenarios were tested with both UDP and TCP, one with non-competing hosts and another with competing hosts. The non-competing hosts scenario tested two hosts sending to a third host through the setup, but their total bandwidth usage was below the link capacity, with the goal of demonstrating the setup/algorithm will behave as expected when not all bandwidth is in use. The competing hosts scenario tested two hosts sending to a third host through the setup, but their total bandwidth usage was above the link capacity, with the goal of demonstrating the setup/algorithm will allocate bandwidth (or not allocate bandwidth in the case of no guarantee and minimum guarantee) as expected when some bandwidth must be given low priority.
+
+All test scenarios have a maximum link capacity of 600 Mbps, and use a minimum rate of 100 Mbps for Host 1, and 200 Mbps for Host 2. In the non-competing scenario, Host 1 has a demand of 200 Mbps, and Host 2 has a demand of 300 Mbps. In the competing scenario, both Host 1 and 2 have demands of 400 Mbps.
+
+An additional test was run for each of the dynamic allocation algorithms, in which the hosts change their demand over the course of the test to demonstrate the dynamic adaptivity of the algorithms. In this test TEST DETAILS
+
+In each test the receiving host (Host 3) is ran iperf\cite{iperf} in server mode, and the other hosts (Host 1 and 2) connected using iperf in client mode. The sending hosts then send data at the specified bandwidth through iperf until the test is complete.
 
 \subsection{No Guarantee}
 \label{no_guar}
 
-Intro of tests.
-
-non compete
+Both non-competing (Table 4) and competing (Table 5) scenarios were run on the no guarantee setup for both UDP and TCP. The results recorded were the demand for each host (Demand), and the actual bandwidth achieved according to iperf (Actual). 
 
 \begin{table}[h]
 	\label{ng_nc}
-	\vspace{-3mm}
+	\vspace{-2mm}
 	\begin{center}
 		\begin{small}
 			\begin{tabular}{cccc}
@@ -501,13 +531,11 @@ non compete
 	\vspace{-3mm}
 \end{table}
 
-short analysis
-
-compete
+The non-competing (Table 4) results show that actual bandwidth was within 5\% of the demand bandwidth for each host for both UDP and TCP. These results indicate that with sum bandwidth demands under link capacity, host demand can be met in full for both protocols.
 
 \begin{table}[h]
 	\label{ng_c}
-	\vspace{-3mm}
+	\vspace{-2mm}
 	\begin{center}
 		\begin{small}
 			\begin{tabular}{cccc}
@@ -529,18 +557,16 @@ compete
 	\vspace{-3mm}
 \end{table}
 
-short analysis
+The competing (Table 5) results indicate
 
 \subsection{Minimum Rate Guarantee}
 \label{min_guar}
 
-Intro of tests.
-
-non compete
+Both non-competing (Table 6) and competing (Table 7) scenarios were run on the minimum guarantee setup for both UDP and TCP. The results recorded were the demand for each host (Demand), the actual bandwidth achieved according to iperf (Actual), and the bandwidth going to the high priority (High Prio) and remarked (Remarked) egress queues according to the controller. 
 
 \begin{table}[h]
 	\label{mg_nc}
-	\vspace{-3mm}
+	\vspace{-2mm}
 	\begin{center}
 		\begin{small}
 		\setlength\tabcolsep{1.5pt}
@@ -563,13 +589,11 @@ non compete
 	\vspace{-3mm}
 \end{table}
 
-short analysis
-
-compete
+The non-competing (Table 6) results show that actual bandwidth was within 5\% of the demand bandwidth for each host for both UDP and TCP. Additionally, high priority bandwidth was within 5\% of the minimum rate for each host. These results indicate that with sum bandwidth demands under link capacity, host demand can be met in full for both protocols, and that minimum rates are given priority.
 
 \begin{table}[h]
 	\label{mg_c}
-	\vspace{-3mm}
+	\vspace{-2mm}
 	\begin{center}
 		\begin{small}
 		\setlength\tabcolsep{1.5pt}
@@ -597,13 +621,11 @@ short analysis
 \subsection{Egalitarian Fairness}
 \label{dba_egal}
 
-Intro of tests.
-
-non compete
+Both non-competing (Table 8) and competing (Table 9) scenarios were run on the minimum guarantee setup for both UDP and TCP. The results recorded were the demand for each host (Demand), the theoretical expected throughput according to the egalitarian allocation algorithm (Expected), the actual bandwidth achieved according to iperf (Actual), and the bandwidth going to the high priority (High), medium priority (Mid), and low priority (Low) egress queues according to the controller. Additionally, the dynamic adaptivity test (Figures 8, 9, 10) was run for this setup.
 
 \begin{table}[h]
 	\label{egal_nc}
-	\vspace{-3mm}
+	\vspace{-2mm}
 	\begin{center}
 		\begin{small}
 		\setlength\tabcolsep{1.5pt}
@@ -626,13 +648,13 @@ non compete
 	\vspace{-3mm}
 \end{table}
 
-short analysis
+The non-competing (Table 8) results show that . These results indicate that with sum bandwidth demands under link capacity, host demand can be met in full for both UDP and TCP.
 
 compete
 
 \begin{table}[h]
 	\label{egal_c}
-	\vspace{-3mm}
+	\vspace{-2mm}
 	\begin{center}
 		\begin{small}
 		\setlength\tabcolsep{1.5pt}
@@ -659,17 +681,34 @@ short analysis
 
 Over time graphs
 
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/dbae_ot_udp_both.png}
+	\caption{ Egalitarian allocation - adaptivity over time - Host 1 and Host 2. } \label{dbae_ot_both}
+\end{figure*}
+
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/dbae_ot_udp_h1.png}
+	\caption{ Egalitarian allocation - adaptivity over time - Host 1 details. } \label{dpae_ot_h1}
+\end{figure*}
+
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/dbae_ot_udp_h2.png}
+	\caption{ Egalitarian allocation - adaptivity over time - Host 2 details. } \label{dbae_ot_h2}
+\end{figure*}
+
 short analysis
 
 \subsection{Proportional Fairness}
 \label{dba_prop}
-Intro of tests.
 
-non compete
+Both non-competing (Table 10) and competing (Table 11) scenarios were run on the minimum guarantee setup for both UDP and TCP. The results recorded were the demand for each host (Demand), the theoretical expected throughput according to the proportional allocation algorithm (Expected), the actual bandwidth achieved according to iperf (Actual), and the bandwidth going to the high priority (High), medium priority (Mid), and low priority (Low) egress queues according to the controller. Additionally, the dynamic adaptivity test (Figures 11, 12, 13) was run for this setup.
 
 \begin{table}[h]
 	\label{prop_nc}
-	\vspace{-3mm}
+	\vspace{-2mm}
 	\begin{center}
 		\begin{small}
 		\setlength\tabcolsep{1.5pt}
@@ -692,13 +731,11 @@ non compete
 	\vspace{-3mm}
 \end{table}
 
-short analysis
-
-compete
+The non-competing (Table 10) results show that . These results indicate that with sum bandwidth demands under link capacity, host demand can be met in full for both UDP and TCP.
 
 \begin{table}[h]
 	\label{prop_c}
-	\vspace{-3mm}
+	\vspace{-2mm}
 	\begin{center}
 		\begin{small}
 		\setlength\tabcolsep{1.5pt}
@@ -725,17 +762,34 @@ short analysis
 
 Over time graphs
 
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/dbap_ot_udp_both.png}
+	\caption{ Proportional allocation - adaptivity over time - Host 1 and Host 2. } \label{dbap_ot_both}
+\end{figure*}
+
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/dbap_ot_udp_h1.png}
+	\caption{ Proportional allocation - adaptivity over time - Host 1 details. } \label{dpap_ot_h1}
+\end{figure*}
+
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/dbap_ot_udp_h2.png}
+	\caption{ Proportional allocation - adaptivity over time - Host 2 details. } \label{dbap_ot_h2}
+\end{figure*}
+
 short analysis
 
 \subsection{Hybrid Proportional Fairness}
 \label{dba_hybr}
-Intro of tests.
 
-non compete
+Both non-competing (Table 12) and competing (Table 13) scenarios were run on the minimum guarantee setup for both UDP and TCP. The results recorded were the demand for each host (Demand), the theoretical expected throughput according to the hybrid proportional allocation algorithm (Expected), the actual bandwidth achieved according to iperf (Actual), and the bandwidth going to the high priority (High), medium priority (Mid), and low priority (Low) egress queues according to the controller. Additionally, the dynamic adaptivity test (Figures 14, 15, 16) was run for this setup.
 
 \begin{table}[h]
 	\label{hybr_nc}
-	\vspace{-3mm}
+	\vspace{-2mm}
 	\begin{center}
 		\begin{small}
 		\setlength\tabcolsep{1.5pt}
@@ -759,13 +813,11 @@ non compete
 	\vspace{-3mm}
 \end{table}
 
-short analysis
-
-compete
+The non-competing (Table 12) results show that . These results indicate that with sum bandwidth demands under link capacity, host demand can be met in full for both UDP and TCP.
 
 \begin{table}[h]
 	\label{hybr_c}
-	\vspace{-3mm}
+	\vspace{-2mm}
 	\begin{center}
 		\begin{small}
 		\setlength\tabcolsep{1.5pt}
@@ -792,6 +844,24 @@ compete
 short analysis
 
 Over time graphs
+
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/dbah_ot_udp_both.png}
+	\caption{ Hybrid proportional allocation - adaptivity over time - Host 1 and Host 2. } \label{dbah_ot_both}
+\end{figure*}
+
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/dbah_ot_udp_h1.png}
+	\caption{ Hybrid proportional allocation - adaptivity over time - Host 1 details. } \label{dpah_ot_h1}
+\end{figure*}
+
+\begin{figure*}
+	\centering
+	\includegraphics[width=6in]{figs/dbah_ot_udp_h2.png}
+	\caption{ Hybrid proportional allocation - adaptivity over time - Host 2 details. } \label{dbah_ot_h2}
+\end{figure*}
 
 short analysis
 
